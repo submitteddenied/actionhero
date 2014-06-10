@@ -6,7 +6,28 @@ var actionhero = new actionheroPrototype();
 var api;
 var socketURL;
 var connections = [];
-var total = 500;
+
+// Note: on OSX, it's hard to config your ulimits > 256.
+// You can raise this limit up on other platforms
+var total = 100; 
+var timeout = (5000 + (total * 50));
+
+var doAll = function(action, params, callback){
+  var started = 0;
+  var errors = [];
+  for (var i = 0; i < connections.length; i++) {
+    started++;
+    (function(i){
+      connections[i].action(action, params, function(d){
+        started--;
+        if(d.error != null){ errors.push(d); }
+        if(started === 0){
+          callback(errors);
+        }
+      });
+    })(i)
+  }
+}
 
 describe('WS Load Test', function(){
 
@@ -19,7 +40,7 @@ describe('WS Load Test', function(){
   });
 
   it('can create many connections', function(done){
-    this.timeout(total * 50);
+    this.timeout(timeout);
 
     var started = 0;
     for (var i = 0; i < total; i++) {
@@ -28,7 +49,6 @@ describe('WS Load Test', function(){
         connections[i] = new actionheroClientPrototype({host: socketURL, faye: faye});
         connections[i].connect(function(err, data){
           started--;
-          // console.log(started)
           should.not.exist(err);
           if(started === 0){
             done();
@@ -36,6 +56,33 @@ describe('WS Load Test', function(){
         });
       })(i)
     } 
+  });
+
+  it('parallel run: status', function(done){
+    this.timeout(timeout);
+
+    doAll('status', {}, function(errors){
+      errors.length.should.equal(0);
+      done();
+    })
+  });
+
+  it('parallel run: randomNumber', function(done){
+    this.timeout(timeout);
+
+    doAll('randomNumber', {}, function(errors){
+      errors.length.should.equal(0);
+      done();
+    })
+  });
+
+  it('parallel run: cacheTest', function(done){
+    this.timeout(timeout);
+
+    doAll('cacheTest', {key: 'k', value: 'v'}, function(errors){
+      errors.length.should.equal(0);
+      done();
+    })
   });
 
 });
