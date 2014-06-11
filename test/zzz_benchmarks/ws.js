@@ -9,7 +9,7 @@ var connections = [];
 
 // Note: on OSX, it's hard to config your ulimits > 256.
 // You can raise this limit up on other platforms
-var total = 100; 
+var total = 250; 
 var timeout = (5000 + (total * 50));
 
 var doAll = function(action, params, callback){
